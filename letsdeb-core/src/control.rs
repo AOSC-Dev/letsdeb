@@ -1,3 +1,4 @@
+use debcontrol::{Paragraph, Field};
 use debcontrol_struct::DebControl;
 
 #[derive(Debug, DebControl)]
@@ -7,7 +8,7 @@ struct Control {
     architecture: String,
     section: String,
     maintainer: String,
-    installed_size: u64,
+    installed_size: String,
     description: String,
     essential: String,
     depends: Option<String>,
@@ -21,7 +22,7 @@ impl Default for Control {
             architecture: "all".to_string(),
             section: "utils".to_string(),
             maintainer: "tester <tester@aosc.io>".to_string(),
-            installed_size: 0,
+            installed_size: 0.to_string(),
             description: "Test package".to_string(),
             essential: "no".to_string(),
             depends: None,

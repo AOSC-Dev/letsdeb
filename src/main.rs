@@ -1,9 +1,10 @@
 use std::{fs, path::Path};
 
 use clap::{Parser, ValueEnum};
-use eyre::Result;
+use eyre::{Result, bail};
 use letsdeb_core::build::{do_build_deb, CompressType};
 use log::info;
+use rustix::process;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -49,6 +50,10 @@ fn main() -> Result<()> {
         level,
         pkg_name,
     } = Args::parse();
+
+    if !process::geteuid().is_root() {
+        bail!("Please run me as root!")
+    }
 
     info!("Building deb ...");
 

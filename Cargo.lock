@@ -385,6 +385,7 @@ dependencies = [
  "inquire",
  "letsdeb-core",
  "log",
+ "rustix",
 ]
 
 [[package]]

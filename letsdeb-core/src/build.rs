@@ -3,6 +3,7 @@ use std::{
     fmt::Display,
     fs,
     io::{self, ErrorKind, Write},
+    os::unix::{self, fs::PermissionsExt},
     path::Path,
 };
 
@@ -49,7 +50,31 @@ pub fn do_build_deb<P: AsRef<Path>>(
 
     let blocklist = root_blocklist.iter().collect::<Vec<_>>();
 
+    for i in fs::read_dir(&root_path)? {
+        let p = i?.path();
+        unix::fs::chown(&p, Some(0), Some(0))?;
+    }
+
     compress_files(&root_path, &compress_type, &output_dir, &blocklist, "data")?;
+
+    for i in fs::read_dir(&control_dir_path)? {
+        let p = i?.path();
+        let file_name = get_file_name(p.file_name())
+            .ok_or_else(|| io::Error::new(ErrorKind::InvalidInput, "Can not parse file name"))?;
+
+        if file_name == "control" {
+            let mut perms = fs::metadata(&p)?.permissions();
+            perms.set_mode(0o644);
+            fs::set_permissions(&p, perms)?;
+        } else {
+            let mut perms = fs::metadata(&p)?.permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&p, perms)?;
+        }
+
+        unix::fs::chown(&p, Some(0), Some(0))?;
+    }
+
     compress_files(
         &control_dir_path,
         &compress_type,
@@ -98,20 +123,14 @@ fn compress_files<P: AsRef<Path>>(
             .position(|x| x == p)
             .is_none()
         {
+            let file_name = get_file_name(p.file_name()).ok_or_else(|| {
+                io::Error::new(ErrorKind::InvalidInput, "Can not parse file name")
+            })?;
+
             if p.is_dir() {
-                tar.append_dir_all(
-                    file_name(p.file_name()).ok_or_else(|| {
-                        io::Error::new(ErrorKind::InvalidInput, "Can not parse file name")
-                    })?,
-                    p,
-                )?;
+                tar.append_dir_all(file_name, p)?;
             } else {
-                tar.append_file(
-                    file_name(p.file_name()).ok_or_else(|| {
-                        io::Error::new(ErrorKind::InvalidInput, "Can not parse file name")
-                    })?,
-                    &mut fs::File::open(p)?,
-                )?;
+                tar.append_file(file_name, &mut fs::File::open(p)?)?;
             }
         }
     }
@@ -138,6 +157,6 @@ fn compress_files<P: AsRef<Path>>(
     Ok(())
 }
 
-fn file_name(file_name: Option<&OsStr>) -> Option<String> {
+fn get_file_name(file_name: Option<&OsStr>) -> Option<String> {
     Some(file_name?.to_str()?.to_string())
 }

@@ -14,7 +14,8 @@ eyre = "0.6"
 env_logger = "0.10"
 log = "0.4"
 indicatif = "0.17"
-inquire = "0.6"
+inquire = "0.6.2"
+rustix = { version = "0.38", features = ["process"] }
 
 [workspace]
 members = ["letsdeb-core"]
