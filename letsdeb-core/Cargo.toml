@@ -10,7 +10,7 @@ xz = "0.1"
 ar = "0.9"
 flate2 = "1.0"
 zstd = "0.13"
-debcontrol_struct = "0.3"
-oma-debcontrol = "0.3"
+debcontrol = { version = "0.3", package = "oma-debcontrol" }
+debcontrol_struct = { version = "0.3", package = "debcontrol-struct-with-oma-decontrol" }
 thiserror = "1.0"
 tar = "0.4"

@@ -13,6 +13,8 @@ letsdeb-core = { version = "0.1", path = "./letsdeb-core" }
 eyre = "0.6"
 env_logger = "0.10"
 log = "0.4"
+indicatif = "0.17"
+inquire = "0.6"
 
 [workspace]
 members = ["letsdeb-core"]

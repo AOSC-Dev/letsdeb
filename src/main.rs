@@ -1,6 +1,8 @@
+use std::{fs, path::Path};
+
 use clap::{Parser, ValueEnum};
 use eyre::Result;
-use letsdeb_core::{do_build_deb, CompressType};
+use letsdeb_core::build::{do_build_deb, CompressType};
 use log::info;
 
 #[derive(Parser, Debug)]
@@ -9,7 +11,7 @@ struct Args {
     #[clap(long)]
     root_path: String,
     #[clap(long)]
-    control_path: String,
+    control_path: Option<String>,
     #[clap(long)]
     #[arg(default_value_t = Self::default_output_dir())]
     output_dir: String,
@@ -49,6 +51,15 @@ fn main() -> Result<()> {
     } = Args::parse();
 
     info!("Building deb ...");
+
+    let control_path = if let Some(control_path) = control_path {
+        control_path
+    } else {
+        let p = Path::new(&root_path).canonicalize()?.join("letsdeb-control");
+        fs::create_dir_all(&p)?;
+
+        p.display().to_string()
+    };
 
     do_build_deb(
         root_path,
