@@ -14,3 +14,4 @@ debcontrol = { version = "0.3", package = "oma-debcontrol" }
 debcontrol_struct = { version = "0.3", package = "debcontrol-struct-with-oma-decontrol" }
 thiserror = "1.0"
 tar = "0.4"
+walkdir = "2.4"
