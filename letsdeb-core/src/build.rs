@@ -51,15 +51,15 @@ pub fn do_build_deb<P: AsRef<Path>>(
 
     let blocklist = root_blocklist.iter().collect::<Vec<_>>();
 
-    for i in WalkDir::new(&root_path).into_iter().flatten() {
-        let p = i.path();
+    for i in WalkDir::new(&root_path) {
+        let p = i?.into_path();
         unix::fs::chown(&p, Some(0), Some(0))?;
     }
 
     compress_files(&root_path, &compress_type, &output_dir, &blocklist, "data")?;
 
-    for i in WalkDir::new(&root_path).into_iter().flatten() {
-        let p = i.path();
+    for i in WalkDir::new(&root_path) {
+        let p = i?.into_path();
         let file_name = get_file_name(p.file_name())
             .ok_or_else(|| io::Error::new(ErrorKind::InvalidInput, "Can not parse file name"))?;
 
