@@ -1,2 +1,3 @@
 # letsdeb
-A debian package (.deb) generator
+
+A Debian package (.deb) generator for generating testcase packages.
