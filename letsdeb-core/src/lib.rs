@@ -1,7 +1,8 @@
 use std::{
+    ffi::OsStr,
     fmt::Display,
     fs,
-    io::{self, Write},
+    io::{self, ErrorKind, Write},
     path::Path,
 };
 
@@ -31,32 +32,31 @@ pub fn do_build_deb<P: AsRef<Path>>(
     output_dir: P,
     pkg_name: &str,
 ) -> io::Result<()> {
-    let output_dir = output_dir.as_ref();
-    let control_dir_path = control_dir_path.as_ref();
-    let root_path = root_path.as_ref();
+    let output_dir = output_dir.as_ref().canonicalize()?;
+    let control_dir_path = control_dir_path.as_ref().canonicalize()?;
+    let root_path = root_path.as_ref().canonicalize()?;
 
-    let root_blocklist = if control_dir_path.starts_with(root_path) {
+    let root_blocklist = if control_dir_path.starts_with(&root_path) {
         let mut v = vec![control_dir_path.to_path_buf()];
-        for i in fs::read_dir(control_dir_path)? {
-            v.push(i?.path().to_path_buf())
+        for i in fs::read_dir(&control_dir_path)? {
+            let p = i?.path();
+            v.push(p)
         }
         v
     } else {
         vec![]
     };
 
-    compress_files(
-        root_path,
-        &compress_type,
-        output_dir,
-        &root_blocklist
-            .iter()
-            .map(|x| x.as_ref())
-            .collect::<Vec<&Path>>(),
-        "data",
-    )?;
+    let blocklist = root_blocklist.iter().collect::<Vec<_>>();
 
-    compress_files(control_dir_path, &compress_type, output_dir, &[], "control")?;
+    compress_files(&root_path, &compress_type, &output_dir, &blocklist, "data")?;
+    compress_files(
+        &control_dir_path,
+        &compress_type,
+        &output_dir,
+        &[],
+        "control",
+    )?;
 
     let mut debian_binary = fs::File::create(output_dir.join("debian-binary"))?;
     debian_binary.write_all(b"2.0")?;
@@ -98,7 +98,21 @@ fn compress_files<P: AsRef<Path>>(
             .position(|x| x == p)
             .is_none()
         {
-            tar.append_path(p)?;
+            if p.is_dir() {
+                tar.append_dir_all(
+                    file_name(p.file_name()).ok_or_else(|| {
+                        io::Error::new(ErrorKind::InvalidInput, "Can not parse file name")
+                    })?,
+                    p,
+                )?;
+            } else {
+                tar.append_file(
+                    file_name(p.file_name()).ok_or_else(|| {
+                        io::Error::new(ErrorKind::InvalidInput, "Can not parse file name")
+                    })?,
+                    &mut fs::File::open(p)?,
+                )?;
+            }
         }
     }
 
@@ -106,15 +120,15 @@ fn compress_files<P: AsRef<Path>>(
 
     let mut compresser: Box<dyn Write> = match compress_type {
         CompressType::Xz { level } => Box::new(XzEncoder::new(
-            fs::File::open(output_dir.join(format!("{name}.tar.xz")))?,
+            fs::File::create(output_dir.join(format!("{name}.tar.xz")))?,
             *level,
         )),
         CompressType::Gz { level } => Box::new(GzEncoder::new(
-            fs::File::open(output_dir.join(format!("{name}.tar.gz")))?,
+            fs::File::create(output_dir.join(format!("{name}.tar.gz")))?,
             Compression::new(*level),
         )),
         CompressType::Zstd { level } => Box::new(zstd::Encoder::new(
-            fs::File::open(output_dir.join(format!("{name}.tar.zstd")))?,
+            fs::File::create(output_dir.join(format!("{name}.tar.zstd")))?,
             *level,
         )?),
     };
@@ -122,4 +136,8 @@ fn compress_files<P: AsRef<Path>>(
     compresser.write_all(&tar.into_inner()?)?;
 
     Ok(())
+}
+
+fn file_name(file_name: Option<&OsStr>) -> Option<String> {
+    Some(file_name?.to_str()?.to_string())
 }
