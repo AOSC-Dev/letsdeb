@@ -1,0 +1,16 @@
+[package]
+name = "letsdeb"
+description = "A debian package (.deb) generator"
+license = "MIT"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "^4", features = ["derive"] }
+letsdeb-core = { version = "0.1", path = "./letsdeb-core" }
+eyre = "0.6"
+
+[workspace]
+members = ["letsdeb-core"]
