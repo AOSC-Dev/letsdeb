@@ -1,4 +1,4 @@
-use debcontrol::{Paragraph, Field};
+use debcontrol::{Field, Paragraph};
 use debcontrol_struct::DebControl;
 
 #[derive(Debug, DebControl)]

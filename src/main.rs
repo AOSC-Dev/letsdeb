@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use clap::{Parser, ValueEnum};
 use eyre::{Result, bail};
-use letsdeb_core::build::{do_build_deb, CompressType};
+use letsdeb_core::build::{CompressType, do_build_deb};
 use log::info;
 use rustix::process;
 
@@ -60,7 +60,9 @@ fn main() -> Result<()> {
     let control_path = if let Some(control_path) = control_path {
         control_path
     } else {
-        let p = Path::new(&root_path).canonicalize()?.join("letsdeb-control");
+        let p = Path::new(&root_path)
+            .canonicalize()?
+            .join("letsdeb-control");
         fs::create_dir_all(&p)?;
 
         p.display().to_string()
